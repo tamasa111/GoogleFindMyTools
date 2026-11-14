@@ -67,6 +67,13 @@ from .proto.mcs_pb2 import (  # pylint: disable=no-name-in-module
     StreamErrorStanza,
 )
 
+import base64
+
+def _b64url_pad_decode(value: str) -> bytes:
+    value = value.split(";")[0].strip()   # drop any extra ;parameters
+    value += "=" * (-len(value) % 4)      # restore missing padding
+    return base64.urlsafe_b64decode(value.encode("ascii"))
+
 _logger = logging.getLogger(__name__)
 
 OnNotificationCallable = Callable[[dict[str, Any], str, Any], None]
@@ -402,8 +409,10 @@ class FcmPushClient:  # pylint:disable=too-many-instance-attributes
         salt_str: str,
         raw_data: bytes,
     ) -> bytes:
-        crypto_key = urlsafe_b64decode(crypto_key_str.encode("ascii"))
-        salt = urlsafe_b64decode(salt_str.encode("ascii"))
+        #crypto_key = urlsafe_b64decode(crypto_key_str.encode("ascii"))
+        crypto_key = _b64url_pad_decode(crypto_key_str)
+        #salt = urlsafe_b64decode(salt_str.encode("ascii"))
+        salt = _b64url_pad_decode(salt_str)
         der_data_str = credentials["keys"]["private"]
         der_data = urlsafe_b64decode(der_data_str.encode("ascii") + b"========")
         secret_str = credentials["keys"]["secret"]
